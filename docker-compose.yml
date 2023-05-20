@@ -1,0 +1,18 @@
+version: "3"
+services:
+  app:
+    build:
+      context: .
+      dockerfile: ./docker/Dockerfile
+    environment:
+      - TZ=Asia/Tokyo
+      - LANG=ja_JP.UTF-8
+      - LANGUAGE=ja_JP:ja
+    volumes:
+      - ./:/home/rl_practice/
+    tty: true
+    deploy:
+      resources:
+        reservations:
+          cpus: '0.25'
+          memory: 300M

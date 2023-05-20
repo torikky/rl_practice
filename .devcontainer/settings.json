@@ -1,0 +1,60 @@
+{
+    "editor.snippetSuggestions": "top",
+    "editor.suggest.showKeywords": false,
+    // "python.linting.enabled": true,
+    // "python.languageServer": "Pylance",
+    // "python.analysis.completeFunctionParens": true,
+    // "python.analysis.extraPaths": [
+    //     "/usr/local/lib/python3.8/site-packages"
+    // ],
+    // "python.autoComplete.extraPaths": [
+    //     "/usr/local/lib/python3.8/site-packages"
+    // ],
+    "python.defaultInterpreterPath": "/usr/local/bin/python",
+    "files.autoSave": "onFocusChange",
+    "git.autofetch": true,
+    "git.enableSmartCommit": true,
+    "git.confirmSync": false,
+    "editor.formatOnType": true,
+    "security.workspace.trust.untrustedFiles": "open",
+    "hediet.vscode-drawio.theme": "dark",
+    "notebook.output.textLineLimit": 100,
+    "editor.formatOnSave": true,
+    "editor.fontSize": 13,
+    "workbench.editorAssociations": {
+        "*.py": "default"
+    },
+    // "python.dataScience.jupyterServerURI": "http://0.0.0.0:8888/",
+    "[python]": {
+        // 拡張機能のBlack Formatterを使う場合には必ず指定する
+        "editor.defaultFormatter": "ms-python.black-formatter",
+        // ファイルの保存時にフォーマットを自動実行する場合
+        "editor.formatOnSave": true,
+        "editor.wordBasedSuggestions": true,
+        "editor.formatOnType": true
+    },
+    // 最大文字数などのオプション引数を指定する場合
+    "black-formatter.args": [
+        "--line-length=120"
+    ],
+    "change-case.c": [
+        "snake_case",
+        "camelCase",
+        "PascalCase",
+        "CONST_CASE"
+    ],
+    "change-case.py": [
+        "camelCase",
+        "snake_case",
+        "PascalCase",
+        "CONST_CASE"
+    ],
+    "jupyter.askForKernelRestart": false,
+    "explorer.confirmDragAndDrop": false,
+    "update.enableWindowsBackgroundUpdates": false,
+    "extensions.autoCheckUpdates": false,
+    "editor.detectIndentation": false,
+    "terminal.integrated.enableMultiLinePasteWarning": false,
+    "update.mode": "none",
+    "files.eol": "\n"
+}
