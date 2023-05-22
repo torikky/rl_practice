@@ -84,7 +84,12 @@
                 "zhengxiaoyao0716.intelligence-change-case",
                 "msrvida.vscode-sanddance",
                 "donjayamanne.githistory",
-                "github.copilot"
+                "github.copilot",
+                "ms-toolsai.jupyter",
+                "ms-toolsai.vscode-jupyter-cell-tags",
+                "ms-toolsai.jupyter-renderers",
+                "ms-toolsai.vscode-jupyter-cell-tags",
+                "ms-toolsai.jupyter-keymap"
                 // "jithurjacob.nbpreviewer"
             ]
         }

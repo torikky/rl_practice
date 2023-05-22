@@ -10,6 +10,7 @@ services:
       - LANGUAGE=ja_JP:ja
     volumes:
       - ./:/home/rl_practice/
+      # - $HOME/.git
     tty: true
     deploy:
       resources:
