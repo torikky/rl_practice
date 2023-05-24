@@ -15,6 +15,8 @@ RUN apt-get update \
     make \
     git \
     wget \
+    # opencvで必要
+    libgl1-mesa-dev \
     && rm -rf /var/lib/apt/lists/*
 
 COPY ./docker/requirements.txt ./
