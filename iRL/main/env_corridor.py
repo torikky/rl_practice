@@ -9,9 +9,14 @@ import cv2          # 画像作成・画像表示・キー操作用のライブ�
 import core         # core.py (C)
 import myutil       # myutil.py (D)
 
-PATH_BLANK = 'image/blank.png'            # 空白（床）(E)
-PATH_ROBOT = 'image/robo_right.png'       # ロボット画像 (F)
-PATH_CRYSTAL = 'image/crystal_small.png'  # クリスタル画像 (G)
+import sys
+from os.path import dirname, abspath
+# カレントディレクトリ
+CURRENT_DIR = dirname(abspath(__file__))
+
+PATH_BLANK = f'{CURRENT_DIR}/image/blank.png'            # 空白（床）(E)
+PATH_ROBOT = f'{CURRENT_DIR}/image/robo_right.png'       # ロボット画像 (F)
+PATH_CRYSTAL = f'{CURRENT_DIR}/image/crystal_small.png'  # クリスタル画像 (G)
 
 
 class CorridorEnv(core.coreEnv):
