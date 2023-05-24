@@ -8,8 +8,10 @@ services:
       - TZ=Asia/Tokyo
       - LANG=ja_JP.UTF-8
       - LANGUAGE=ja_JP:ja
+      - DISPLAY=${DISPLAY}
     volumes:
       - ./:/home/rl_practice/
+      - /tmp/.X11-unix:/tmp/.X11-unix
       # - $HOME/.git
     tty: true
     deploy:
