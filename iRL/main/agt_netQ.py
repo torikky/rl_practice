@@ -4,25 +4,26 @@ agt_netQ.py
 """
 import numpy as np
 import tensorflow as tf
-from tensorflow.keras.models import Sequential
-from tensorflow.keras.layers import Dense, Flatten
+from keras.models import Sequential
+from keras.layers import Dense, Flatten
 
 # 自作モジュール
 import core
 
 
 class NetQAgt(core.coreAgt):
-    """ Qネットワークを使ったQ学習エージェントクラス """
-    def __init__(               # 引数とデフォルト値の設定 (A)
-            self,
-            n_act=3,            # int: 行動の種類数（ネットワークの出力数）
-            input_size=(4,),    # tuple of int: 入力サイズ
-            n_dense=32,         # int: 中間層のニューロン数
-            epsilon=0.1,        # float: 乱雑度
-            gamma=0.9,          # float: 割引率
-            filepath=None,      # str: 保存ファイル名
-            ):
-        """ 初期処理 """
+    """Qネットワークを使ったQ学習エージェントクラス"""
+
+    def __init__(  # 引数とデフォルト値の設定 (A)
+        self,
+        n_act=3,  # int: 行動の種類数（ネットワークの出力数）
+        input_size=(4,),  # tuple of int: 入力サイズ
+        n_dense=32,  # int: 中間層のニューロン数
+        epsilon=0.1,  # float: 乱雑度
+        gamma=0.9,  # float: 割引率
+        filepath=None,  # str: 保存ファイル名
+    ):
+        """初期処理"""
         # 引数の設定は適時編集
         self.epsilon = epsilon
         # ------------------------- 編集ここから
@@ -39,23 +40,25 @@ class NetQAgt(core.coreAgt):
         # ------------------------- ここまで
 
     def _build_Qnet(self):
-        """ 指定したパラメータでQネットワークを構築 """
+        """指定したパラメータでQネットワークを構築"""
         # Qネットワークの構築 (A)
-        model = Sequential([
-            Flatten(input_shape=self.input_size),
-            Dense(self.n_dense, activation='relu'),
-            Dense(self.n_act, activation='linear'),
-        ])
+        model = Sequential(
+            [
+                Flatten(input_shape=self.input_size),
+                Dense(self.n_dense, activation="relu"),
+                Dense(self.n_act, activation="linear"),
+            ]
+        )
 
         # 勾配法のパラメータの定義 (B)
         model.compile(
-            optimizer='adam',
-            loss='mse',
+            optimizer="adam",
+            loss="mse",
         )
         return model
 
     def select_action(self, obs):
-        """  観測に対して行動を出力 """
+        """観測に対して行動を出力"""
         # ------------------------- 編集ここから
         # 確率的に処理を分岐 (A)
         if np.random.rand() < self.epsilon:
@@ -71,16 +74,15 @@ class NetQAgt(core.coreAgt):
         return act
 
     def get_Q(self, obs):
-        """ 観測に対するQ値を出力 """
+        """観測に対するQ値を出力"""
         # ------------------------- 編集ここから
         # 観測obsを入力し出力を得る (A)
-        Q = self.model.predict(
-            obs.reshape((1,) + self.input_size))[0, :]
+        Q = self.model.predict(obs.reshape((1,) + self.input_size))[0, :]
         # ------------------------- ここまで
         return Q
 
     def learn(self, obs, act, rwd, done, next_obs):
-        """ 学習 """
+        """学習"""
         if rwd is None:
             return
         # ------------------------- 編集ここから
@@ -108,36 +110,37 @@ class NetQAgt(core.coreAgt):
         self.model.fit(
             obs.reshape((1,) + self.input_size),
             target.reshape(1, -1),
-            verbose=0, epochs=1,
-            )
+            verbose=0,
+            epochs=1,
+        )
         # ------------------------- ここまで
         return
 
     def save_weights(self, filepath=None):
-        """ モデルの重みデータの保存 """
+        """モデルの重みデータの保存"""
         # ------------------------- 編集ここから
         if filepath is None:
             filepath = self.filepath
-        self.model.save(filepath + '.h5', overwrite=True)
+        self.model.save(filepath + ".h5", overwrite=True)
         # ------------------------- ここまで
 
     def load_weights(self, filepath=None):
-        """ モデルの重みデータの読み込み """
+        """モデルの重みデータの読み込み"""
         # ------------------------- 編集ここから
         if filepath is None:
             filepath = self.filepath
-        self.model = tf.keras.models.load_model(filepath + '.h5')
+        self.model = tf.keras.models.load_model(filepath + ".h5")
         # ------------------------- ここまで
 
 
-if __name__ == '__main__':
+if __name__ == "__main__":
     # エージェントのインスタンス生成 (A)
     agt = NetQAgt(n_act=3, input_size=(5,))
 
     # 行動選択 (B)
     obs = np.array([[1, 1, 1, 1, 1]])
     act = agt.select_action(obs)
-    print('act', act)
+    print("act", act)
 
     # 学習 (C)
     rwd = 1
@@ -146,15 +149,15 @@ if __name__ == '__main__':
     agt.learn(obs, act, rwd, done, next_obs)
 
     # モデル構造の表示 (D)
-    print('モデルの構造')
+    print("モデルの構造")
     agt.model.summary()
 
     # 重みパラメータの保存 (E)
-    agt.save_weights('agt_data/test')
+    agt.save_weights("agt_data/test")
 
     # 重みパラメータの読み込み (F)
-    agt.load_weights('agt_data/test')
+    agt.load_weights("agt_data/test")
 
     # モデルへの観測の入力 (G)
     y = agt.model.predict(obs)
-    print('モデルの出力 y', y.reshape(-1))
+    print("モデルの出力 y", y.reshape(-1))

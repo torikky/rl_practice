@@ -12,22 +12,27 @@ import cv2
 import core
 import myutil
 
+from os.path import dirname, abspath
+
+# カレントディレクトリ
+CURRENT_DIR = dirname(abspath(__file__))
 
 # ロボット画像
 PATH_ROBOT = [
-    'image/robo_back.png',
-    'image/robo_left.png',
-    'image/robo_front.png',
-    'image/robo_right.png',
+    f"{CURRENT_DIR}/image/robo_back.png",
+    f"{CURRENT_DIR}/image/robo_left.png",
+    f"{CURRENT_DIR}/image/robo_front.png",
+    f"{CURRENT_DIR}/image/robo_right.png",
 ]
 
-PATH_BLANK = 'image/blank2.png'       # 空白（床）、シロフチなし
-PATH_CRYSTAL = 'image/crystal.png'    # クリスタル画像
-PATH_WALL = 'image/wall.png'          # 壁画像
+PATH_BLANK = f"{CURRENT_DIR}/image/blank2.png"  # 空白（床）、シロフチなし
+PATH_CRYSTAL = f"{CURRENT_DIR}/image/crystal.png"  # クリスタル画像
+PATH_WALL = f"{CURRENT_DIR}/image/wall.png"  # 壁画像
 
 
 class TaskType(Enum):  # (B)
-    """ タスクタイプの列挙型 """
+    """タスクタイプの列挙型"""
+
     # タスクタイプを登録　(C)
     no_wall = auto()
     fixed_wall = auto()
@@ -36,7 +41,7 @@ class TaskType(Enum):  # (B)
 
     @classmethod
     def Enum_of(cls, task_str):
-        """ タスクの文字列を列挙型に変換 """
+        """タスクの文字列を列挙型に変換"""
         for t in TaskType:
             if t.name == task_str:
                 return t
@@ -44,7 +49,8 @@ class TaskType(Enum):  # (B)
 
 
 class FieldEnv(core.coreEnv):
-    """ フィールドタスクの環境クラス """
+    """フィールドタスクの環境クラス"""
+
     # 内部表現のID
     ID_blank = 0
     ID_robot = 1
@@ -52,29 +58,31 @@ class FieldEnv(core.coreEnv):
     ID_crystal = 3
 
     # 上、左、下、右、方向移動で座標変化
-    dr = np.array([
+    dr = np.array(
+        [
             [0, -1],
             [-1, 0],
             [0, 1],
             [1, 0],
-        ])
+        ]
+    )
 
-    def __init__(               # (A)
-            self,
-            field_size=5,       # int: フィールドの1辺の長さ
-            sight_size=3,       # int: 視野の長さ
-            max_time=30,        # int: タイムリミット
-            n_wall=1,           # int: 壁の数（map_type='random'用）
-            n_crystal=2,        # int: クリスタルの数
-            start_pos=(3, 3),   # tuple of int: スタート座標
-            start_dir=0,        # int: スタート時の方向(0, 1, 2, or 3)
-            rwd_hit_wall=-0.2,  # float: 壁に当たった時の報酬（ダメージ）
-            rwd_move=-0.1,      # float: 動いたときの報酬（コスト）
-            rwd_crystal=1.0,    # float: クリスタルを得た時の報酬
-            map_type='random',  # str: 'random' or 'fixed_map'
-            wall_observable=True,  # bool: 壁を観測に入れる
-            ):
-        """ 初期処理 """
+    def __init__(  # (A)
+        self,
+        field_size=5,  # int: フィールドの1辺の長さ
+        sight_size=3,  # int: 視野の長さ
+        max_time=30,  # int: タイムリミット
+        n_wall=1,  # int: 壁の数（map_type='random'用）
+        n_crystal=2,  # int: クリスタルの数
+        start_pos=(3, 3),  # tuple of int: スタート座標
+        start_dir=0,  # int: スタート時の方向(0, 1, 2, or 3)
+        rwd_hit_wall=-0.2,  # float: 壁に当たった時の報酬（ダメージ）
+        rwd_move=-0.1,  # float: 動いたときの報酬（コスト）
+        rwd_crystal=1.0,  # float: クリスタルを得た時の報酬
+        map_type="random",  # str: 'random' or 'fixed_map'
+        wall_observable=True,  # bool: 壁を観測に入れる
+    ):
+        """初期処理"""
         # 引数の設定は適時編集
         self.n_act = 3  # <--- 行動数を設定 (B)
         self.done = False
@@ -94,12 +102,12 @@ class FieldEnv(core.coreEnv):
         self.wall_observable = wall_observable
 
         # 内部状態の変数 (D)
-        self.robot_pos = None       # ロボットの位置
-        self.agt_dir = None         # ロボットの方向
-        self.fieldmap = None        # クリスタルと壁の配置
+        self.robot_pos = None  # ロボットの位置
+        self.agt_dir = None  # ロボットの方向
+        self.fieldmap = None  # クリスタルと壁の配置
         self.n_collected_crystal = 0  # 回収したクリスタルの数
-        self.time = None            # タイムリミット用のカウント
-        self.robot_state = None     # render 用
+        self.time = None  # タイムリミット用のカウント
+        self.robot_state = None  # render 用
 
         # 画像の読み込み
         self.img_robot = []
@@ -112,19 +120,19 @@ class FieldEnv(core.coreEnv):
         # ------------------------- ここまで
 
     def set_task_type(self, task_type):
-        """ task_type を指定してparameterを一括設定 """
+        """task_type を指定してparameterを一括設定"""
         if task_type == TaskType.no_wall:
-            self.field_size = 5        # int: フィールドの1辺の長さ
-            self.sight_size = 4        # int: 視野の長さ
-            self.max_time = 15         # int: タイムリミット
-            self.rwd_hit_wall = -0.2   # float: 壁に当たった時の罰
-            self.rwd_move = -0.1       # float: 移動コスト
-            self.rwd_crystal = 1.0     # float: クリスタルを得た時の報酬
-            self.map_type = 'random'   # 指定したクリスタルと壁の数でマップを自動生成
-            self.n_wall = 0            # int: 壁の数（'random'用）
-            self.n_crystal = 1         # int: クリスタルの数（'random'用）
-            self.start_pos = (2, 2)    # tuple of int: スタート座標
-            self.start_dir = 0         # int: スタート時の方向(0, 1, 2, or 3)
+            self.field_size = 5  # int: フィールドの1辺の長さ
+            self.sight_size = 4  # int: 視野の長さ
+            self.max_time = 15  # int: タイムリミット
+            self.rwd_hit_wall = -0.2  # float: 壁に当たった時の罰
+            self.rwd_move = -0.1  # float: 移動コスト
+            self.rwd_crystal = 1.0  # float: クリスタルを得た時の報酬
+            self.map_type = "random"  # 指定したクリスタルと壁の数でマップを自動生成
+            self.n_wall = 0  # int: 壁の数（'random'用）
+            self.n_crystal = 1  # int: クリスタルの数（'random'用）
+            self.start_pos = (2, 2)  # tuple of int: スタート座標
+            self.start_dir = 0  # int: スタート時の方向(0, 1, 2, or 3)
             self.wall_observable = False  # bool: 壁を観測に入れる
 
         elif task_type == TaskType.fixed_wall:
@@ -134,16 +142,16 @@ class FieldEnv(core.coreEnv):
             self.rwd_hit_wall = -0.2
             self.rwd_move = -0.1
             self.rwd_crystal = 1.0
-            self.map_type = 'fixed_map'  # マップを指定するタイプ
+            self.map_type = "fixed_map"  # マップを指定するタイプ
             # fixed_mapの場合は text_mapを指定
             # '-': blank, # 'c': crystal, 'w': wall
             self.text_map = [  # 行数と列数はfield_sizeと一致させる
-                '--ww-',
-                '-----',
-                '-w--c',
-                '-wcww',
-                'ww--w',
-                ]
+                "--ww-",
+                "-----",
+                "-w--c",
+                "-wcww",
+                "ww--w",
+            ]
             self.n_wall = None  # 使用せず
             self.n_crystal = 2
             self.start_pos = (0, 1)
@@ -157,7 +165,7 @@ class FieldEnv(core.coreEnv):
             self.rwd_hit_wall = -0.2
             self.rwd_move = -0.1
             self.rwd_crystal = 1.0
-            self.map_type = 'random'
+            self.map_type = "random"
             self.n_wall = 4
             self.n_crystal = 4
             self.start_pos = (3, 3)
@@ -179,17 +187,17 @@ class FieldEnv(core.coreEnv):
             self.wall_observable = True  # <--- ここまで
             """  # ---- my_wall追加時にはこのコメント行を消す
         else:
-            raise ValueError('task_type が間違っています')
+            raise ValueError("task_type が間違っています")
 
     def reset(self):
-        """ 状態を初期化 """
+        """状態を初期化"""
         self.done = False
         # ------------------------- 編集ここから
-        self.robot_state = 'normal'   # render 用
-        self.time = 0                 # タイムリミット用のカウントを0
+        self.robot_state = "normal"  # render 用
+        self.time = 0  # タイムリミット用のカウントを0
         self.n_collected_crystal = 0  # 集めたクリスタルの数を0
 
-        if self.map_type == 'random':  # (A)
+        if self.map_type == "random":  # (A)
             # マップをランダム生成
             for i in range(100):
                 self._random_map()  # ランダムで壁とクリスタルを配置
@@ -200,16 +208,15 @@ class FieldEnv(core.coreEnv):
                     break
                 if i == 99:
                     # 100回生成して全て解けないパターンだったらエラー終了
-                    msg = 'マップが生成できません。' + \
-                        '壁やクリスタルの数を減らしてください'
+                    msg = "マップが生成できません。" + "壁やクリスタルの数を減らしてください"
                     raise ValueError(msg)
 
-        elif self.map_type == 'fixed_map':  # (B)
+        elif self.map_type == "fixed_map":  # (B)
             # self.text_map の情報でマップを生成
             self._fixed_map()
 
         else:
-            raise ValueError('map_type が間違っています')
+            raise ValueError("map_type が間違っています")
 
         # 観測を生成  # (C)
         obs = self._make_obs()
@@ -233,14 +240,14 @@ class FieldEnv(core.coreEnv):
         obs_crystal = np.zeros((size, size), dtype=int)
 
         # obs_crystalの中心にmap_crystalをコピー
-        obs_crystal[f_s:f_s * 2, f_s:f_s * 2] = map_crystal
+        obs_crystal[f_s : f_s * 2, f_s : f_s * 2] = map_crystal
 
         # robot_posを中心とした視野の大きさの矩形を抜き出し、
         # クリスタルの観測obs_crystalを作成
         s_s = self.sight_size
         x_val = f_s + self.robot_pos[0]
         y_val = f_s + self.robot_pos[1]
-        obs_crystal = obs_crystal[y_val-s_s:y_val+s_s+1, x_val-s_s:x_val+s_s+1]
+        obs_crystal = obs_crystal[y_val - s_s : y_val + s_s + 1, x_val - s_s : x_val + s_s + 1]
 
         # ロボットの方向に合わせてobs_crystalを回転
         if self.agt_dir == 3:
@@ -263,11 +270,11 @@ class FieldEnv(core.coreEnv):
             obs_wall = np.ones((size, size), dtype=int)
 
             # obs_wallの中心にmap_wallをコピー
-            obs_wall[f_s:f_s * 2, f_s:f_s * 2] = map_wall
+            obs_wall[f_s : f_s * 2, f_s : f_s * 2] = map_wall
 
             # robot_posを中心とした視野の大きさの矩形を抜き出し、
             # 壁の観測 obs_wallを作成
-            obs_wall = obs_wall[y_val-s_s:y_val+s_s+1, x_val-s_s:x_val+s_s+1]
+            obs_wall = obs_wall[y_val - s_s : y_val + s_s + 1, x_val - s_s : x_val + s_s + 1]
 
             # ロボットの方向に合わせてobs_wallを回転
             if self.agt_dir == 3:
@@ -303,14 +310,14 @@ class FieldEnv(core.coreEnv):
             line = []
             id_val = None
             for i in mline:
-                if i == 'w':
+                if i == "w":
                     id_val = FieldEnv.ID_wall
-                elif i == '-':
+                elif i == "-":
                     id_val = FieldEnv.ID_blank
-                elif i == 'c':
+                elif i == "c":
                     id_val = FieldEnv.ID_crystal
                 else:
-                    raise ValueError('マップのコードに解釈できない文字が含まれています')
+                    raise ValueError("マップのコードに解釈できない文字が含まれています")
                 line.append(id_val)
             myfield.append(line)
         self.fieldmap = np.array(myfield, dtype=int)
@@ -332,17 +339,17 @@ class FieldEnv(core.coreEnv):
         self.agt_dir = self.start_dir
 
         # フィールドを準備
-        self.fieldmap = np.ones((self.field_size,) * 2, dtype=int) \
-            * FieldEnv.ID_blank
+        self.fieldmap = np.ones((self.field_size,) * 2, dtype=int) * FieldEnv.ID_blank
 
         # クリスタルの位置を決める
         for _ in range(self.n_crystal):
             while True:
                 x_val = random.randint(0, self.field_size - 1)
                 y_val = random.randint(0, self.field_size - 1)
-                if not(x_val == self.start_pos[0]
-                        and y_val == self.start_pos[1]) \
-                        and self.fieldmap[y_val, x_val] == FieldEnv.ID_blank:
+                if (
+                    not (x_val == self.start_pos[0] and y_val == self.start_pos[1])
+                    and self.fieldmap[y_val, x_val] == FieldEnv.ID_blank
+                ):
                     self.fieldmap[y_val, x_val] = FieldEnv.ID_crystal
                     break
 
@@ -351,13 +358,14 @@ class FieldEnv(core.coreEnv):
             for i in range(100):
                 x_val = random.randint(0, self.field_size - 1)
                 y_val = random.randint(0, self.field_size - 1)
-                if not(self.robot_pos[0] == x_val
-                        and self.robot_pos[1] == y_val) \
-                        and self.fieldmap[y_val, x_val] == FieldEnv.ID_blank:
+                if (
+                    not (self.robot_pos[0] == x_val and self.robot_pos[1] == y_val)
+                    and self.fieldmap[y_val, x_val] == FieldEnv.ID_blank
+                ):
                     self.fieldmap[y_val, x_val] = FieldEnv.ID_wall
                     break
             if i == 99:
-                print('壁の数が多すぎてマップが作れません')
+                print("壁の数が多すぎてマップが作れません")
                 sys.exit()
 
     def _map_check(self):
@@ -385,8 +393,7 @@ class FieldEnv(core.coreEnv):
             for i_y in range(1, f_h + 1):
                 for i_x in range(1, f_w + 1):
                     if f_val[i_y, i_x] == enable:
-                        f_val, is_change, reached_crystal = \
-                            self._count_update(f_val, i_x, i_y, enable)
+                        f_val, is_change, reached_crystal = self._count_update(f_val, i_x, i_y, enable)
                         possible_crystal += reached_crystal
             if is_change is False:
                 break
@@ -404,54 +411,49 @@ class FieldEnv(core.coreEnv):
         reached_crystal = 0
         for i in range(d_agt.shape[0]):
             # 上左下右の方向に対するループ
-            if f_val[i_y + d_agt[i, 0], i_x + d_agt[i, 1]] \
-                    == FieldEnv.ID_blank or \
-                    f_val[i_y + d_agt[i, 0], i_x + d_agt[i, 1]] \
-                    == FieldEnv.ID_crystal:
+            if (
+                f_val[i_y + d_agt[i, 0], i_x + d_agt[i, 1]] == FieldEnv.ID_blank
+                or f_val[i_y + d_agt[i, 0], i_x + d_agt[i, 1]] == FieldEnv.ID_crystal
+            ):
                 # i_x, i_y から各方向の隣がblankかcrystalだったら
-                if f_val[i_y + d_agt[i, 0], i_x + d_agt[i, 1]] \
-                        == FieldEnv.ID_crystal:
+                if f_val[i_y + d_agt[i, 0], i_x + d_agt[i, 1]] == FieldEnv.ID_crystal:
                     # i_x, i_y から各方向の隣がcrystalだったらクリスタルのカウントを+1
                     # その場所を enableで埋める
                     reached_crystal += 1
                     f_val[i_y + d_agt[i, 0], i_x + d_agt[i, 1]] = enable
                     is_change = True
-                elif f_val[i_y + d_agt[i, 0], i_x + d_agt[i, 1]] \
-                        == FieldEnv.ID_blank:
+                elif f_val[i_y + d_agt[i, 0], i_x + d_agt[i, 1]] == FieldEnv.ID_blank:
                     f_val[i_y + d_agt[i, 0], i_x + d_agt[i, 1]] = enable
                     # i_x, i_y から各方向の隣がblankだったら
                     # その場所を enableで埋める
                     is_change = True
                 else:
-                    raise ValueError('Err!')
+                    raise ValueError("Err!")
 
         return f_val, is_change, reached_crystal
 
     def step(self, act):
-        """ 状態を更新 """
+        """状態を更新"""
         # 最終状態の次の状態はリセット
         if self.done is True:
             obs = self.reset()
             return None, None, obs
 
         # ------------------------- 編集ここから
-        self.robot_state = 'normal'
+        self.robot_state = "normal"
         if act == 0:
             # 進む (A)
             pos = self.robot_pos + FieldEnv.dr[self.agt_dir]
-            if pos[0] < 0 or self.field_size <= pos[0] or \
-                    pos[1] < 0 or self.field_size <= pos[1]:
+            if pos[0] < 0 or self.field_size <= pos[0] or pos[1] < 0 or self.field_size <= pos[1]:
                 # フィールドの範囲外に進もうとした
-                self.robot_state = 'hit_wall'
+                self.robot_state = "hit_wall"
                 rwd = self.rwd_hit_wall
                 done = False
 
-            elif self.fieldmap[pos[1], pos[0]] \
-                    == FieldEnv.ID_crystal:
+            elif self.fieldmap[pos[1], pos[0]] == FieldEnv.ID_crystal:
                 # 進む先がクリスタルだった
-                self.robot_state = 'success'
-                self.fieldmap[pos[1], pos[0]] \
-                    = FieldEnv.ID_blank
+                self.robot_state = "success"
+                self.fieldmap[pos[1], pos[0]] = FieldEnv.ID_blank
                 rwd = self.rwd_crystal
                 self.n_collected_crystal += 1
                 if self.n_collected_crystal == self.n_crystal:
@@ -463,22 +465,20 @@ class FieldEnv(core.coreEnv):
                     done = False
                     self.robot_pos = pos
 
-            elif self.fieldmap[pos[1], pos[0]] \
-                    == FieldEnv.ID_blank:
+            elif self.fieldmap[pos[1], pos[0]] == FieldEnv.ID_blank:
                 # 進む先が空白（床）だった
                 self.robot_pos = pos
                 rwd = self.rwd_move
                 done = False
 
-            elif self.fieldmap[pos[1], pos[0]] \
-                    == FieldEnv.ID_wall:
+            elif self.fieldmap[pos[1], pos[0]] == FieldEnv.ID_wall:
                 # 進む先が壁だった
-                self.robot_state = 'hit_wall'
+                self.robot_state = "hit_wall"
                 rwd = self.rwd_hit_wall
                 done = False
 
             else:
-                raise ValueError('Err!')
+                raise ValueError("Err!")
 
         elif act == 1:
             # 左に90度回転する (B)
@@ -493,15 +493,15 @@ class FieldEnv(core.coreEnv):
             done = False
 
         else:
-            raise ValueError('Err!')
+            raise ValueError("Err!")
 
         # タイムリミットに達したら最終状態 (D)
         self.time += 1
         if self.time >= self.max_time:
             done = True
-            if self.robot_state is not 'success':
+            if self.robot_state is not "success":
                 rwd = self.rwd_hit_wall
-                self.robot_state = 'timeover'
+                self.robot_state = "timeover"
 
         # ------------------------- ここまで
         self.done = done
@@ -513,7 +513,7 @@ class FieldEnv(core.coreEnv):
         return rwd, done, obs
 
     def render(self):
-        """ 状態に対応した画像を作成 """
+        """状態に対応した画像を作成"""
         # ------------------------- 編集ここから
         # 画像サイズ width x height を決める
         unit = self.unit
@@ -531,17 +531,14 @@ class FieldEnv(core.coreEnv):
 
                 if self.fieldmap[i_y, i_x] == FieldEnv.ID_wall:
                     # 壁
-                    img_out = myutil.copy_img(
-                        img_out, self.img_wall, r0[0], r0[1])
+                    img_out = myutil.copy_img(img_out, self.img_wall, r0[0], r0[1])
                 else:
                     # 空白部分（床）
-                    img_out = myutil.copy_img(
-                        img_out, self.img_blank, r0[0], r0[1])
+                    img_out = myutil.copy_img(img_out, self.img_blank, r0[0], r0[1])
 
                 if self.fieldmap[i_y, i_x] == FieldEnv.ID_crystal:
                     # クリスタル
-                    img_out = myutil.copy_img(
-                        img_out, self.img_crystal, r0[0], r0[1], isTrans=True)
+                    img_out = myutil.copy_img(img_out, self.img_crystal, r0[0], r0[1], isTrans=True)
 
         # ロボットの描画
         img_out = self._draw_robot(img_out)
@@ -558,7 +555,7 @@ class FieldEnv(core.coreEnv):
         render()で使用
         """
         col_target = (224, 224, 224)  # ロボットの頭の色
-        col_fail = (0, 0, 255)    # 赤
+        col_fail = (0, 0, 255)  # 赤
         col_success = (0, 200, 0)  # 緑
 
         # ロボット元画像をコピー
@@ -566,9 +563,9 @@ class FieldEnv(core.coreEnv):
 
         # 頭の色を赤か緑に塗る
         idx = np.where((img_robot == col_target).all(axis=2))
-        if self.robot_state in ('hit_wall', 'timeover'):
+        if self.robot_state in ("hit_wall", "timeover"):
             img_robot[idx] = col_fail
-        elif self.robot_state == 'success':
+        elif self.robot_state == "success":
             img_robot[idx] = col_success
 
         # ロボット画像の貼り付け
@@ -600,20 +597,21 @@ class FieldEnv(core.coreEnv):
         return img
 
 
-if __name__ == '__main__':
-
+if __name__ == "__main__":
     # コマンドライン引数の取得
     argvs = sys.argv
 
     # 操作方法の表示
     if len(argvs) < 2:
-        msg = '\n' + \
-            '---- 実行方法 -------------------------------------\n' + \
-            '[task_type] を指定して実行します\n' + \
-            '> python env_field.py [task_type]\n' + \
-            '[task_type]\n' + \
-            f'{", ".join([t.name for t in TaskType])}\n' + \
-            '---------------------------------------------------'
+        msg = (
+            "\n"
+            + "---- 実行方法 -------------------------------------\n"
+            + "[task_type] を指定して実行します\n"
+            + "> python env_field.py [task_type]\n"
+            + "[task_type]\n"
+            + f'{", ".join([t.name for t in TaskType])}\n'
+            + "---------------------------------------------------"
+        )
 
         print(msg)
         sys.exit()
@@ -625,20 +623,20 @@ if __name__ == '__main__':
     # タスクタイプの確認
     ttype = TaskType.Enum_of(argvs[1])
     if ttype is None:
-        msg = '\n' + \
-            '[task_type] が異なります。以下から選んで指定してください。\n' + \
-            f'{", ".join([t.name for t in TaskType])}\n'
+        msg = "\n" + "[task_type] が異なります。以下から選んで指定してください。\n" + f'{", ".join([t.name for t in TaskType])}\n'
         print(msg)
         sys.exit()
 
     env.set_task_type(ttype)
-    msg = '---- 操作方法 -------------------------------------\n' + \
-          '[e] 前に進む [s] 左に90度回る [f] 右に90度回る\n' + \
-          '[q] 終了\n' + \
-          '全てのクリスタルを回収するとクリア、次のエピソードが開始\n' + \
-          '---------------------------------------------------'
+    msg = (
+        "---- 操作方法 -------------------------------------\n"
+        + "[e] 前に進む [s] 左に90度回る [f] 右に90度回る\n"
+        + "[q] 終了\n"
+        + "全てのクリスタルを回収するとクリア、次のエピソードが開始\n"
+        + "---------------------------------------------------"
+    )
     print(msg)
-    print(f'[task_type]: {argvs[1]:s}\n')
+    print(f"[task_type]: {argvs[1]:s}\n")
 
     # 強化学習情報の初期化
     t = 0
@@ -648,24 +646,22 @@ if __name__ == '__main__':
     done = False
 
     # 開始の表示
-    print('')
-    print('あなたのプレイ開始')
+    print("")
+    print("あなたのプレイ開始")
 
     # 強化学習情報表示の関数定義
     def show_info(t, act, rwd, done, obs, isFirst=False):
-        """ 強化学習情報の表示 """
+        """強化学習情報の表示"""
         if rwd is None:
             if isFirst:
                 tt = t
             else:
                 tt = t + 1
-            print('')
-            print('x({0:d})=\n{1:s}'.format(
-                tt, str(obs)))
+            print("")
+            print("x({0:d})=\n{1:s}".format(tt, str(obs)))
         else:
-            msg = 'a({0:d})={1:d}, r({0:d})={2: .2f}, ' \
-                + 'done({0:d})={3:}, \nx({4:d})=\n{5:s}'
-            print(msg.format(t, act, rwd, done, t+1, str(obs)))
+            msg = "a({0:d})={1:d}, r({0:d})={2: .2f}, " + "done({0:d})={3:}, \nx({4:d})=\n{5:s}"
+            print(msg.format(t, act, rwd, done, t + 1, str(obs)))
 
     # 強化学習情報表示
     show_info(t, act, rwd, done, obs, isFirst=True)
@@ -674,19 +670,19 @@ if __name__ == '__main__':
     while True:
         # 画面表示
         image = env.render()
-        cv2.imshow('you', image)
+        cv2.imshow("you", image)
 
         # キーの受付と終了処理
         key = cv2.waitKey(0)
-        if key == ord('q'):
+        if key == ord("q"):
             break
 
         # あなたの行動選択
-        if key == ord('e'):  # 進む
+        if key == ord("e"):  # 進む
             act = 0
-        elif key == ord('f'):  # 右回転
+        elif key == ord("f"):  # 右回転
             act = 2
-        elif key == ord('s'):  # 左回転
+        elif key == ord("s"):  # 左回転
             act = 1
         else:
             continue
